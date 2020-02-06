@@ -115,7 +115,7 @@ double run_without_if(void) {
 
 double run_int(void) {
   std::mt19937 mt(1);
-  int r;
+  int r = 0;
   std::uniform_int_distribution<> ud(-100, 100);
   for (int j = 0; j < 10000; j++) {
     for (int i = 0; i < 10000; i++) {

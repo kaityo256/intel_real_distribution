@@ -2,7 +2,7 @@
 #include <random>
 
 double run(void) {
-  std::mt19937 mt;
+  std::mt19937 mt(1);
   double r = 0.0;
   std::uniform_real_distribution<> ud(-1.0, 1.0);
   for (int j = 0; j < 10000; j++) {
