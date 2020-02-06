@@ -15,7 +15,7 @@ While investigating the cause of this problem, I arrived at the simple code.
 #include <random>
 
 double run(void) {
-  std::mt19937 mt;
+  std::mt19937 mt(1);
   double r = 0.0;
   std::uniform_real_distribution<> ud(-1.0, 1.0);
   for (int j = 0; j < 10000; j++) {
@@ -43,12 +43,12 @@ The benchmark results are as follows.
 $ g++ -O3 -march=native -Wall -Wextra -std=c++11 test.cpp -o gcc.out
 $ icpc -O3 -xHOST -Wall -Wextra -std=c++11  test.cpp -o icpc.out
 $ time ./gcc.out
--1884.26
-./gcc.out  0.33s user 0.00s system 99% cpu 0.333 total
+-6698.66
+./gcc.out  0.33s user 0.00s system 99% cpu 0.335 total
 
 $ time ./icpc.out
--1884.26
-./icpc.out  2.92s user 0.00s system 99% cpu 2.932 total
+-6698.66
+./icpc.out  2.93s user 0.00s system 99% cpu 2.939 total
 ```
 
 The two executables give the identical result, but the executable produced by Intel compiler is significantly slower than that by GCC.
@@ -96,7 +96,7 @@ double run_always_zero(void) {
 }
 ```
 
-But the Intel compiler still generates a slower executable than that by GCC.
+But the Intel compiler still generates a significantly slower executable than that by GCC.
 
 ### If-statement
 
@@ -138,8 +138,10 @@ double run_int(void) {
 
 * Use user-defined distribution
 
+[Taken from boost](https://github.com/boostorg/random/blob/develop/include/boost/random/uniform_real_distribution.hpp
+)
+
 ```cpp
-// https://github.com/boostorg/random/blob/develop/include/boost/random/uniform_real_distribution.hpp
 double my_uniform_real(std::mt19937 &mt, double min_value, double max_value) {
   for (;;) {
     double numerator = static_cast<double>(mt() - mt.min());
@@ -161,5 +163,57 @@ double run_my_distribution(void) {
 }
 ```
 
-In the bose cases, the Intel compiler generates faster executables than that by GCC.
+In the bose cases, the Intel compiler generates faster (or acceptable) executables than that by GCC.
 
+## Summary
+
+Here is the table of the summary.
+
+* Envrionment
+  * CPU: Intel(R) Xeon(R) Gold 6230 CPU @ 2.10GHz
+  * OS: CentOS Linux release 7.6.1810 (Core)
+  * GCC: g++ (GCC) 7.3.1 20180303 (Red Hat 7.3.1-5)
+  * icpc: icpc (ICC) 19.0.4.243 20190416
+
+| PNG | Distribution| if-statement| gcc [ms]| icpc [ms] |
+|--- | --- | --- | --- | --- |
+| `std::mt19937` | `std::uniform_real_distribution`| Included | 523 | 2933 |
+| `std::minstd_rand0` | `std::uniform_real_distribution` | Included | 410 | 2770 |
+| `std::ranlux24_base` | `std::uniform_real_distribution` | Included | 782 | 2997 |
+| Xorshift | `std::uniform_real_distribution` | Included | 188 | 2757 |
+| Always Zero | `std::uniform_real_distribution` | Included | 52 | 2707 |
+| `std::mt19937` | `std::uniform_int_distribution` | Included | 819 | 948 |
+| `std::mt19937` | `std::uniform_real_distribution` | Not included | 1043 | 612 |
+| `std::mt19937` | user defined | Included | 529 | 273 |
+
+From the above results, we found that the optimizer of the Intel compiler exhibits weird behavior when the loop contains an if-statement and the if-statements contains `std::uniform_real_distribution`.
+
+## How to build
+
+```sh
+make
+make run
+```
+
+Here is the raw output.
+
+```sh
+./gcc.out
+mt          + real   + if Result = -6698.66 Elapsed = 523 [ms]
+linear      + real   + if Result = -1084.15 Elapsed = 410 [ms]
+subtract    + real   + if Result = -2890.53 Elapsed = 782 [ms]
+xorshift    + real   + if Result = -5872.91 Elapsed = 188 [ms]
+always_zero + real   + if Result = -5e+07 Elapsed = 52 [ms]
+mt          + int    + if Result = 508885 Elapsed = 819 [ms]
+mt          + real   - if Result = -8741.89 Elapsed = 1043 [ms]
+mt          + myreal + if Result = -4523.55 Elapsed = 529 [ms]
+./icpc.out
+mt          + real   + if Result = -6698.66 Elapsed = 2933 [ms]
+linear      + real   + if Result = -1084.15 Elapsed = 2770 [ms]
+subtract    + real   + if Result = -2890.53 Elapsed = 2997 [ms]
+xorshift    + real   + if Result = -5872.91 Elapsed = 2757 [ms]
+always_zero + real   + if Result = -5e+07 Elapsed = 2707 [ms]
+mt          + int    + if Result = 508885 Elapsed = 948 [ms]
+mt          + real   - if Result = -8741.89 Elapsed = 612 [ms]
+mt          + myreal + if Result = -4523.55 Elapsed = 273 [ms]
+```
