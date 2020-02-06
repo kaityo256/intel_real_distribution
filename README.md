@@ -6,7 +6,7 @@ I've found that some codes compiled by the Intel compiler are significantly slow
 
 [https://github.com/kaityo256/compiler_test](https://github.com/kaityo256/compiler_test)
 
-This is a Monte Carlo simulation code of the Potts model which is one of the fundamental models in statistical physics.
+This is a Monte Carlo simulation code of the Potts model, which is one of the fundamental models in statistical physics.
 
 While investigating the cause of this problem, I arrived at the simple code.
 
@@ -33,7 +33,7 @@ int main() {
 
 The benchmark results are as follows.
 
-* Envrionment
+* Environment
   * CPU: Intel(R) Xeon(R) Gold 6230 CPU @ 2.10GHz
   * OS: CentOS Linux release 7.6.1810 (Core)
   * GCC: g++ (GCC) 7.3.1 20180303 (Red Hat 7.3.1-5)
@@ -51,7 +51,7 @@ $ time ./icpc.out
 ./icpc.out  2.93s user 0.00s system 99% cpu 2.939 total
 ```
 
-The two executables give the identical result, but the executable produced by Intel compiler is significantly slower than that by GCC.
+The two executables give identical results, but the executable produced by the Intel compiler is significantly slower than that by GCC.
 
 From the detailed investigation described later, I found that the weird behavior will happen under the following conditions.
 
@@ -65,9 +65,9 @@ From the detailed investigation described later, I found that the weird behavior
 
 First, I suspect that this is caused by the pseudo-random generator (PRG). So I changed the Mersenne Twister to other PRG.
 
-We can adopt several PNGs, such as the linear congruential method (`std::minstd_rand0`) and the RANLUX method (`std::ranlux24_base`). I also checked the Xorshift method. But the situation does not changed even if we changed the PNG.
+We can adopt several PNGs, such as the linear congruential method (`std::minstd_rand0`) and the RANLUX method (`std::ranlux24_base`). I also checked the Xorshift method. But the situation does not change even if we changed the PNG.
 
-Additionally, I defined the PNG which returns always zero.
+Additionally, I defined the PNG, which always returns zero.
 
 ```cpp
 class always_zero {
@@ -100,7 +100,7 @@ But the Intel compiler still generates a significantly slower executable than th
 
 ### If-statement
 
-If the loop does not contains the if-statement, then this weird behavior does not occur.
+If the loop does not contain the if-statement, then this weird behavior does not occur.
 
 ```cpp
 double run_without_if(void) {
@@ -118,7 +118,7 @@ double run_without_if(void) {
 
 ### Distribution
 
-If we replace `std::uniform_real_distribution` by other functions, then the weird behavior dissapiars.
+If we replace `std::uniform_real_distribution` by other functions, then the weird behavior disappears.
 
 * Use `std::uniform_int_distribution`.
 
@@ -169,7 +169,7 @@ In the bose cases, the Intel compiler generates faster (or acceptable) executabl
 
 Here is the table of the summary.
 
-* Envrionment
+* Environment
   * CPU: Intel(R) Xeon(R) Gold 6230 CPU @ 2.10GHz
   * OS: CentOS Linux release 7.6.1810 (Core)
   * GCC: g++ (GCC) 7.3.1 20180303 (Red Hat 7.3.1-5)
